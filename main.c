@@ -8,6 +8,8 @@
 #define ctrl(x) ((x) & 0x1f)
 #define SHELL "[canosh]$ "
 #define ENTER 10
+#define UP_ARROW 259
+#define DOWN_ARROW 258
 #define DATA_START_CAPACITY 128
 
 #define ASSERT(cond, ...) \
@@ -49,12 +51,14 @@ int main() {
 	initscr();
 	raw();
 	noecho();
+	keypad(stdscr, TRUE);
 	
 	String command = {0};
 	Strings command_his = {0};
 	
 	int ch;
 	size_t line = 0;
+	size_t command_max = 0;
 	
 	bool QUIT = false;
 	while(!QUIT) {
@@ -71,7 +75,20 @@ int main() {
 				mvprintw(line, 0, "`%.*s` is not regonized as an internal or external command", (int)command.count, command.data);
 				line++;
 				DA_APPEND(&command_his, command);
+				if(command_his.count > command_max) command_max = command_his.count;
 				command = (String){0};
+				break;
+			case UP_ARROW:
+				if(command_his.count > 0) {
+					command_his.count--;
+					command = command_his.data[command_his.count];
+				}
+				break;
+			case DOWN_ARROW:
+				if(command_his.count < command_max) {
+					command_his.count++;
+					command = command_his.data[command_his.count];
+				}
 				break;
 			default:
 				DA_APPEND(&command, ch);
