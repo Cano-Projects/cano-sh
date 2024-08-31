@@ -46,6 +46,10 @@ typedef struct {
 	size_t count;
 	size_t capacity;
 } Strings;
+	
+void clear_line(size_t line) {
+	for(size_t i = sizeof(SHELL)-1; i < sizeof(SHELL)-1+32; i++) mvprintw(line, i, " ");
+}
 
 int main() {
 	initscr();
@@ -62,8 +66,10 @@ int main() {
 	
 	bool QUIT = false;
 	while(!QUIT) {
+		clear_line(line);
+		
 		mvprintw(line, 0, SHELL);
-		mvprintw(line, 0+sizeof(SHELL)-1, "%.*s", (int)command.count, command.data);
+		mvprintw(line, sizeof(SHELL)-1, "%.*s", (int)command.count, command.data);
 		ch = getch();
 		switch(ch) {
 			case ctrl('q'):
@@ -72,6 +78,7 @@ int main() {
 			case KEY_ENTER:
 			case ENTER:
 				line++;
+				clear_line(line);
 				mvprintw(line, 0, "`%.*s` is not regonized as an internal or external command", (int)command.count, command.data);
 				line++;
 				DA_APPEND(&command_his, command);
@@ -100,7 +107,6 @@ int main() {
 	
 	endwin();
 	for(size_t i = 0; i < command_his.count; i++) {
-		printf("%.*s\n", (int)command_his.data[i].count, command_his.data[i].data);
 		free(command_his.data[i].data);
 	}
 	return 0;
