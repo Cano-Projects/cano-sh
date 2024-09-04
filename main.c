@@ -59,19 +59,36 @@ void handle_command(char *file, char **args) {
 	int pid = fork();
 	int status;
 	
+	char buf[1024] = {0};
+	int filedes[2];
+	if(pipe(filedes) < 0) {
+		printw("error %s\n", strerror(errno));
+	}
+	
 	if(pid < 0) { // error
-		printw("error %s", strerror(errno));
+		printw("error %s\n", strerror(errno));
 		return;
 	} else if(!pid) { // child process
-		if(execvp(args[0], args) < 0) {
-			printw("error %s", strerror(errno));
+		close(filedes[0]);
+		if(dup2(filedes[1], fileno(stdout)) < 0) {
+			printw("error %s\n", strerror(errno));
 		}
+		
+		if(execvp(args[0], args) < 0) {
+			printw("error %s\n", strerror(errno));
+		}
+		fflush(stdout);
+		close(filedes[1]);
+
 	} else { // parent process
+		close(filedes[1]);
 		pid_t wpid = waitpid(pid, &status, 0);
 		(void)wpid;
 		while(!WIFEXITED(status) && !WIFSIGNALED(status)) {
 			wpid = waitpid(pid, &status, 0);
 		}
+		read(filedes[0], buf, 1024);
+		mvprintw(10, 10, "buf: %s", buf);
 	}	
 }
 	
