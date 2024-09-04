@@ -2,6 +2,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <errno.h>
+#include <unistd.h>
+
+#include <sys/wait.h>
 
 #include <ncurses.h>
 
@@ -50,6 +54,53 @@ typedef struct {
 void clear_line(size_t line) {
 	for(size_t i = sizeof(SHELL)-1; i < sizeof(SHELL)-1+32; i++) mvprintw(line, i, " ");
 }
+	
+void handle_command(char *file, char **args) {
+	int pid = fork();
+	int status;
+	
+	if(pid < 0) { // error
+		printw("error %s", strerror(errno));
+		return;
+	} else if(!pid) { // child process
+		if(execvp(args[0], args) < 0) {
+			printw("error %s", strerror(errno));
+		}
+	} else { // parent process
+		pid_t wpid = waitpid(pid, &status, 0);
+		(void)wpid;
+		while(!WIFEXITED(status) && !WIFSIGNALED(status)) {
+			wpid = waitpid(pid, &status, 0);
+		}
+	}	
+}
+	
+char *str_to_cstr(String str) {
+	char *cstr = malloc(sizeof(char)*str.count+1);
+	memcpy(cstr, str.data, sizeof(char)*str.count);
+	cstr[str.count] = '\0';
+	return cstr;
+}
+	
+char **parse_command(char *command) {
+	char *cur = strtok(command, " ");
+	if(cur == NULL) {
+		return NULL;
+	}
+	size_t args_s = 8;
+	char **args = malloc(sizeof(char*)*args_s);
+	size_t args_cur = 0;
+	while(cur != NULL) {	
+		if(args_cur >= args_s) {
+			args_s *= 2;
+			args = realloc(args, sizeof(char*)*args_s);
+		}
+		args[args_cur++] = cur;
+		cur = strtok(NULL, " ");
+	}
+
+	return args;
+}
 
 int main() {
 	initscr();
@@ -78,11 +129,17 @@ int main() {
 			case KEY_ENTER:
 			case ENTER:
 				line++;
-				clear_line(line);
-				mvprintw(line, 0, "`%.*s` is not regonized as an internal or external command", (int)command.count, command.data);
-				line++;
-				DA_APPEND(&command_his, command);
-				if(command_his.count > command_max) command_max = command_his.count;
+				char **args = NULL;
+				if(command.count > 0) {				
+					args = parse_command(str_to_cstr(command));
+				}
+				mvprintw(line, command.count, "\n\r");
+				if(args != NULL) {
+					line++;
+					handle_command(args[0], args);
+					DA_APPEND(&command_his, command);
+					if(command_his.count > command_max) command_max = command_his.count;
+				}
 				command = (String){0};
 				break;
 			case UP_ARROW:

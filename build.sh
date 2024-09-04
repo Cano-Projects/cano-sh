@@ -1,1 +1,1 @@
-gcc main.c -o main -Wall -Wextra -Wpedantic -lncurses
+gcc main.c -o main -Wall -Wextra -ggdb2 -Wpedantic -lncurses
