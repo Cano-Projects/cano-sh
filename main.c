@@ -59,26 +59,25 @@ void handle_command(char **args, size_t *line) {
 	char buf[4096] = {0};
 	int filedes[2];
 	if(pipe(filedes) < 0) {
-		printw("error %s\n", strerror(errno));
+		mvprintw(*line, 0, "error %s", strerror(errno));
 	}
 	
 	int status;
 	int pid = fork();
 	if(pid < 0) { // error
-		printw("error %s\n", strerror(errno));
+		mvprintw(*line, 0, "error %s", strerror(errno));
 		return;
 	} else if(!pid) { // child process
 		close(filedes[0]);
 		if(dup2(filedes[1], STDOUT_FILENO) < 0) {
-			printw("error %s\n", strerror(errno));
+			printf("%s\n", strerror(errno));
 		}
 		close(filedes[1]);
-		
+
 		if(execvp(args[0], args) < 0) {
-			endwin();
-			fprintf(stderr, "error %s\n", strerror(errno));
-			exit(1);
+			printf("%s\n", strerror(errno));
 		}
+		exit(1);
 	} else { // parent process
 		close(filedes[1]);
 		int wpid = waitpid(pid, &status, 0);
@@ -87,7 +86,7 @@ void handle_command(char **args, size_t *line) {
 		}
 		int nbytes = read(filedes[0], buf, sizeof(buf)-1);
 		if(nbytes < 0) {
-			printw("error %s\n", strerror(errno));
+			mvprintw(*line, 0, "error %s", strerror(errno));
 		}
 		close(filedes[0]);
 		mvprintw(*line, 0, "%s", buf);
