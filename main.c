@@ -14,6 +14,8 @@
 #define ENTER 10
 #define UP_ARROW 259
 #define DOWN_ARROW 258
+#define LEFT_ARROW 260
+#define RIGHT_ARROW 261
 #define DATA_START_CAPACITY 128
 
 #define ASSERT(cond, ...) \
@@ -142,6 +144,7 @@ int main() {
 	int ch;
 	size_t line = 0;
 	size_t command_max = 0;
+	size_t command_pos = 0;
 	
 	bool QUIT = false;
 	while(!QUIT) {
@@ -149,6 +152,9 @@ int main() {
 		
 		mvprintw(line, 0, SHELL);
 		mvprintw(line, sizeof(SHELL)-1, "%.*s", (int)command.count, command.data);
+		
+		move(line, sizeof(SHELL)-1+command_pos);
+
 		ch = getch();
 		switch(ch) {
 			case ctrl('q'):
@@ -163,12 +169,24 @@ int main() {
 				}
 				mvprintw(line, command.count, "\n\r");
 				if(args != NULL) {
-					//line++;
 					handle_command(args, &line);
 					DA_APPEND(&command_his, command);
 					if(command_his.count > command_max) command_max = command_his.count;
 				}
 				command = (String){0};
+				break;
+			case KEY_BACKSPACE:
+				if(command.count > 0) command.data[--command.count] = '\0';
+				break;
+			case LEFT_ARROW:
+				if(command_pos > 0) {
+					command_pos--;
+				}
+				break;
+			case RIGHT_ARROW:
+				if(command_pos < command.count) {
+					command_pos++;
+				}
 				break;
 			case UP_ARROW:
 				if(command_his.count > 0) {
@@ -183,9 +201,13 @@ int main() {
 				}
 				break;
 			default:
+				if(command_pos > command.count) command_pos = command.count;
 				DA_APPEND(&command, ch);
+				memmove(&command.data[command_pos+1], &command.data[command_pos], command.count - 1 - command_pos);
+				command.data[command_pos++] = ch;
 				break;
 		}
+		if(command_pos > command.count) command_pos = command.count;
 	}
 	
 	refresh();
