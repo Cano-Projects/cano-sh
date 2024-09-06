@@ -55,40 +55,46 @@ void clear_line(size_t line) {
 	for(size_t i = sizeof(SHELL)-1; i < sizeof(SHELL)-1+32; i++) mvprintw(line, i, " ");
 }
 	
-void handle_command(char *file, char **args) {
-	int pid = fork();
-	int status;
-	
-	char buf[1024] = {0};
+void handle_command(char **args, size_t *line) {
+	char buf[4096] = {0};
 	int filedes[2];
 	if(pipe(filedes) < 0) {
 		printw("error %s\n", strerror(errno));
 	}
 	
+	int status;
+	int pid = fork();
 	if(pid < 0) { // error
 		printw("error %s\n", strerror(errno));
 		return;
 	} else if(!pid) { // child process
 		close(filedes[0]);
-		if(dup2(filedes[1], fileno(stdout)) < 0) {
+		if(dup2(filedes[1], STDOUT_FILENO) < 0) {
 			printw("error %s\n", strerror(errno));
 		}
+		close(filedes[1]);
 		
 		if(execvp(args[0], args) < 0) {
-			printw("error %s\n", strerror(errno));
+			endwin();
+			fprintf(stderr, "error %s\n", strerror(errno));
+			exit(1);
 		}
-		fflush(stdout);
-		close(filedes[1]);
-
 	} else { // parent process
 		close(filedes[1]);
-		pid_t wpid = waitpid(pid, &status, 0);
-		(void)wpid;
+		int wpid = waitpid(pid, &status, 0);
 		while(!WIFEXITED(status) && !WIFSIGNALED(status)) {
 			wpid = waitpid(pid, &status, 0);
 		}
-		read(filedes[0], buf, 1024);
-		mvprintw(10, 10, "buf: %s", buf);
+		int nbytes = read(filedes[0], buf, sizeof(buf)-1);
+		if(nbytes < 0) {
+			printw("error %s\n", strerror(errno));
+		}
+		close(filedes[0]);
+		mvprintw(*line, 0, "%s", buf);
+		for(size_t i = 0; buf[i] != '\0'; i++) {
+			if(buf[i] == '\n') *line += 1;
+		}
+		refresh();
 	}	
 }
 	
@@ -115,6 +121,8 @@ char **parse_command(char *command) {
 		args[args_cur++] = cur;
 		cur = strtok(NULL, " ");
 	}
+		
+	args[args_cur] = NULL;
 
 	return args;
 }
@@ -152,8 +160,8 @@ int main() {
 				}
 				mvprintw(line, command.count, "\n\r");
 				if(args != NULL) {
-					line++;
-					handle_command(args[0], args);
+					//line++;
+					handle_command(args, &line);
 					DA_APPEND(&command_his, command);
 					if(command_his.count > command_max) command_max = command_his.count;
 				}
