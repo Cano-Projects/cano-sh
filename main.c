@@ -80,19 +80,23 @@ void handle_command(char **args, size_t *line) {
 		exit(1);
 	} else { // parent process
 		close(filedes[1]);
+
+		int nbytes = 0;
+		while((nbytes = read(filedes[0], buf, sizeof(buf)-1)) != 0) {
+			mvprintw(*line, 0, "%s", buf);
+			for(size_t i = 0; buf[i] != '\0'; i++) {
+				if(buf[i] == '\n') *line += 1;
+			}
+			refresh();
+			memset(buf, 0, sizeof(buf));
+		}
+			
 		int wpid = waitpid(pid, &status, 0);
 		while(!WIFEXITED(status) && !WIFSIGNALED(status)) {
 			wpid = waitpid(pid, &status, 0);
 		}
-		int nbytes = read(filedes[0], buf, sizeof(buf)-1);
-		if(nbytes < 0) {
-			mvprintw(*line, 0, "error %s", strerror(errno));
-		}
 		close(filedes[0]);
-		mvprintw(*line, 0, "%s", buf);
-		for(size_t i = 0; buf[i] != '\0'; i++) {
-			if(buf[i] == '\n') *line += 1;
-		}
+
 		refresh();
 	}	
 }
