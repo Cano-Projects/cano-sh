@@ -4,6 +4,7 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include <sys/wait.h>
 
@@ -149,14 +150,30 @@ char **parse_command(char *command) {
 	char **args = malloc(sizeof(char*)*args_s);
 	size_t args_cur = 0;
 	while(cur != NULL) {	
-		if(args_cur >= args_s) {
+		if(args_cur+2 >= args_s) {
 			args_s *= 2;
 			args = realloc(args, sizeof(char*)*args_s);
 		}
+		while(command[0] != '\0') command++;
+		command++;
+		assert(command);
+		if(command[0] == '\'') {
+			command++;
+			args[args_cur++] = cur;
+			cur = command;
+			args[args_cur++] = cur;
+			while(command[0] != '\'' && command[0] != '\0') command++;
+			if(command[0] == '\0') break;
+			command[0] = '\0';
+			command++;
+			cur = strtok(command, " ");
+			continue;
+		}
+		
 		args[args_cur++] = cur;
 		cur = strtok(NULL, " ");
 	}
-		
+
 	args[args_cur] = NULL;
 
 	return args;
