@@ -56,8 +56,8 @@ typedef struct {
 void clear_line(size_t line, size_t width) {
 	for(size_t i = sizeof(SHELL)-1; i < width-sizeof(SHELL)-1; i++) mvprintw(line, i, " ");
 }
-	
-void handle_command(char **args, size_t *line) {
+
+void execute_command(char **args, size_t *line) {
 	char buf[4096] = {0};
 	int filedes[2];
 	if(pipe(filedes) < 0) {
@@ -97,11 +97,41 @@ void handle_command(char **args, size_t *line) {
 		while(!WIFEXITED(status) && !WIFSIGNALED(status)) {
 			wpid = waitpid(pid, &status, 0);
 		}
+		(void)wpid;
+		
 		close(filedes[0]);
 
 		refresh();
 	}	
 }
+	
+void handle_command(char **args, size_t *line) {
+	if(*args == NULL) {
+		mvprintw(*line, 0, "error, no command\n");		
+		return;
+	}
+	if(strcmp(args[0], "exit") == 0) {
+		int exit_code = 0;
+		if(args[1] != NULL) {
+			exit_code = strtol(args[1], NULL, 10);
+		}
+		endwin();
+		printf("exit\n");
+		exit(exit_code);
+	} else if(strcmp(args[0], "cd") == 0) {
+		char *dir = "~";
+		if(args[1] != NULL) {
+			dir = args[1];
+		}
+		if(chdir(dir) < 0) {
+			mvprintw(*line, 0, "`%s` %s", dir, strerror(errno));
+			*line += 1;
+		}
+	} else {
+		execute_command(args, line);
+	}
+}
+
 	
 char *str_to_cstr(String str) {
 	char *cstr = malloc(sizeof(char)*str.count+1);
@@ -147,6 +177,7 @@ int main() {
 	size_t command_pos = 0;
 	
 	size_t height = 0;
+	(void)height;
 	size_t width = 0;
 	
 	bool QUIT = false;
