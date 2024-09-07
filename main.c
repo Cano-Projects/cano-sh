@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <ctype.h>
 #include <errno.h>
 #include <unistd.h>
 #include <assert.h>
@@ -112,12 +113,18 @@ void handle_command(char **args, size_t *line) {
 		return;
 	}
 	if(strcmp(args[0], "exit") == 0) {
-		int exit_code = 0;
-		if(args[1] != NULL) {
-			exit_code = strtol(args[1], NULL, 10);
-		}
 		endwin();
 		printf("exit\n");
+		int exit_code = 0;
+		if(args[1] != NULL) {
+			for(size_t i = 0; args[1][i] != '\0'; i++) {
+				if(!isdigit(args[1][i])) {
+					fprintf(stderr, "numeric argument required - %s\n", args[1]);		
+					exit(2);
+				}
+			}
+			exit_code = strtol(args[1], NULL, 10);
+		}
 		exit(exit_code);
 	} else if(strcmp(args[0], "cd") == 0) {
 		char *dir = "~";
