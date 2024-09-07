@@ -53,8 +53,8 @@ typedef struct {
 	size_t capacity;
 } Strings;
 	
-void clear_line(size_t line) {
-	for(size_t i = sizeof(SHELL)-1; i < sizeof(SHELL)-1+32; i++) mvprintw(line, i, " ");
+void clear_line(size_t line, size_t width) {
+	for(size_t i = sizeof(SHELL)-1; i < width-sizeof(SHELL)-1; i++) mvprintw(line, i, " ");
 }
 	
 void handle_command(char **args, size_t *line) {
@@ -146,9 +146,13 @@ int main() {
 	size_t command_max = 0;
 	size_t command_pos = 0;
 	
+	size_t height = 0;
+	size_t width = 0;
+	
 	bool QUIT = false;
 	while(!QUIT) {
-		clear_line(line);
+		getmaxyx(stdscr, height, width);
+		clear_line(line, width);
 		
 		mvprintw(line, 0, SHELL);
 		mvprintw(line, sizeof(SHELL)-1, "%.*s", (int)command.count, command.data);
@@ -175,6 +179,10 @@ int main() {
 				}
 				command = (String){0};
 				break;
+			case ctrl('c'):
+				line++;
+				command = (String){0};
+				break;
 			case KEY_BACKSPACE:
 				if(command.count > 0) command.data[--command.count] = '\0';
 				break;
@@ -192,12 +200,14 @@ int main() {
 				if(command_his.count > 0) {
 					command_his.count--;
 					command = command_his.data[command_his.count];
+					command_pos = command.count;
 				}
 				break;
 			case DOWN_ARROW:
 				if(command_his.count < command_max) {
 					command_his.count++;
 					command = command_his.data[command_his.count];
+					command_pos = command.count;
 				}
 				break;
 			default:
