@@ -13,6 +13,7 @@ LDLIBS = -lncurses
 
 VPATH := .
 SRC-OUT := main.c
+SRC-OUT += repl.c
 
 vpath %.c $(VPATH)
 
