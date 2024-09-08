@@ -1,15 +1,16 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
-#include <unistd.h>
-#include <assert.h>
-
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 #include <ncurses.h>
+
+#include "cano_sh.h"
 
 #define ctrl(x) ((x) & 0x1f)
 #define SHELL "[canosh]$ "
@@ -43,20 +44,14 @@
     (da)->data[(da)->count++] = (item);                                                \
 } while (0)
 
-typedef struct {
-	char *data;
-	size_t count;
-	size_t capacity;
-} String;
-	
-typedef struct {
-	String *data;
-	size_t count;
-	size_t capacity;
-} Strings;
-	
 void clear_line(size_t line, size_t width) {
 	for(size_t i = sizeof(SHELL)-1; i < width-sizeof(SHELL)-1; i++) mvprintw(line, i, " ");
+}
+
+static
+void close_pipe(int pipes[2]) {
+	close(pipes[0]);
+	close(pipes[1]);
 }
 
 void execute_command(char **args, size_t *line) {
@@ -65,16 +60,21 @@ void execute_command(char **args, size_t *line) {
 	int stderr_des[2];
 	if(pipe(stdout_des) < 0) {
 		mvprintw(*line, 0, "error %s", strerror(errno));
+        return;
 	}
 
 	if(pipe(stderr_des) < 0) {
 		mvprintw(*line, 0, "error %s", strerror(errno));
+        close_pipe(stdout_des);
+        return;
 	}
 	
 	int status;
 	int pid = fork();
 	if(pid < 0) { // error
 		mvprintw(*line, 0, "error %s", strerror(errno));
+        close_pipe(stdout_des);
+        close_pipe(stderr_des);
 		return;
 	} else if(!pid) { // child process
 		close(stdout_des[0]);
@@ -123,6 +123,7 @@ void execute_command(char **args, size_t *line) {
 		(void)wpid;
 		
 		close(stdout_des[0]);
+		close(stderr_des[0]);
 
 		refresh();
 	}	
@@ -148,7 +149,7 @@ void handle_command(char **args, size_t *line) {
 		}
 		exit(exit_code);
 	} else if(strcmp(args[0], "cd") == 0) {
-		char *dir = "~";
+		char const *dir = "~";
 		if(args[1] != NULL) {
 			dir = args[1];
 		}
@@ -164,6 +165,8 @@ void handle_command(char **args, size_t *line) {
 	
 char *str_to_cstr(String str) {
 	char *cstr = malloc(sizeof(char)*str.count+1);
+	if (cstr == NULL)
+		return NULL;
 	memcpy(cstr, str.data, sizeof(char)*str.count);
 	cstr[str.count] = '\0';
 	return cstr;
@@ -176,6 +179,9 @@ char **parse_command(char *command) {
 	}
 	size_t args_s = 8;
 	char **args = malloc(sizeof(char*)*args_s);
+    if (args == NULL) {
+        return NULL;
+    }
 	size_t args_cur = 0;
 	while(cur != NULL) {	
 		if(args_cur+2 >= args_s) {
@@ -207,7 +213,7 @@ char **parse_command(char *command) {
 	return args;
 }
 
-int main() {
+int main(void) {
 	initscr();
 	raw();
 	noecho();
