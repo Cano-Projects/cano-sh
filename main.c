@@ -14,11 +14,6 @@
 
 #define ctrl(x) ((x) & 0x1f)
 #define SHELL "[canosh]$ "
-#define ENTER 10
-#define UP_ARROW 259
-#define DOWN_ARROW 258
-#define LEFT_ARROW 260
-#define RIGHT_ARROW 261
 #define DATA_START_CAPACITY 128
 
 #define ASSERT(cond, ...) \
@@ -247,7 +242,7 @@ int main(void) {
 				QUIT = true;
 				break;
 			case KEY_ENTER:
-			case ENTER:
+			case '\n':
 				line++;
 				char **args = NULL;
 				if(command.count > 0) {				
@@ -268,24 +263,24 @@ int main(void) {
 			case KEY_BACKSPACE:
 				if(command.count > 0) command.data[--command.count] = '\0';
 				break;
-			case LEFT_ARROW:
+			case KEY_LEFT:
 				if(command_pos > 0) {
 					command_pos--;
 				}
 				break;
-			case RIGHT_ARROW:
+			case KEY_RIGHT:
 				if(command_pos < command.count) {
 					command_pos++;
 				}
 				break;
-			case UP_ARROW:
+			case KEY_UP:
 				if(command_his.count > 0) {
 					command_his.count--;
 					command = command_his.data[command_his.count];
 					command_pos = command.count;
 				}
 				break;
-			case DOWN_ARROW:
+			case KEY_DOWN:
 				if(command_his.count < command_max) {
 					command_his.count++;
 					command = command_his.data[command_his.count];
