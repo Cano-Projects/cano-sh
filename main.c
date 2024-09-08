@@ -61,8 +61,13 @@ void clear_line(size_t line, size_t width) {
 
 void execute_command(char **args, size_t *line) {
 	char buf[4096] = {0};
-	int filedes[2];
-	if(pipe(filedes) < 0) {
+	int stdout_des[2];
+	int stderr_des[2];
+	if(pipe(stdout_des) < 0) {
+		mvprintw(*line, 0, "error %s", strerror(errno));
+	}
+
+	if(pipe(stderr_des) < 0) {
 		mvprintw(*line, 0, "error %s", strerror(errno));
 	}
 	
@@ -72,21 +77,37 @@ void execute_command(char **args, size_t *line) {
 		mvprintw(*line, 0, "error %s", strerror(errno));
 		return;
 	} else if(!pid) { // child process
-		close(filedes[0]);
-		if(dup2(filedes[1], STDOUT_FILENO) < 0) {
+		close(stdout_des[0]);
+		close(stderr_des[0]);
+		if(dup2(stdout_des[1], STDOUT_FILENO) < 0) {
 			printf("%s\n", strerror(errno));
 		}
-		close(filedes[1]);
+
+		if(dup2(stderr_des[1], STDERR_FILENO) < 0) {
+			printf("%s\n", strerror(errno));
+		}
+		close(stdout_des[1]);
+		close(stderr_des[1]);
 
 		if(execvp(args[0], args) < 0) {
 			printf("%s\n", strerror(errno));
 		}
 		exit(1);
 	} else { // parent process
-		close(filedes[1]);
+		close(stdout_des[1]);
+		close(stderr_des[1]);
 
 		int nbytes = 0;
-		while((nbytes = read(filedes[0], buf, sizeof(buf)-1)) != 0) {
+		while((nbytes = read(stdout_des[0], buf, sizeof(buf)-1)) != 0) {
+			mvprintw(*line, 0, "%s", buf);
+			for(size_t i = 0; buf[i] != '\0'; i++) {
+				if(buf[i] == '\n') *line += 1;
+			}
+			refresh();
+			memset(buf, 0, sizeof(buf));
+		}
+
+		while((nbytes = read(stderr_des[0], buf, sizeof(buf)-1)) != 0) {
 			mvprintw(*line, 0, "%s", buf);
 			for(size_t i = 0; buf[i] != '\0'; i++) {
 				if(buf[i] == '\n') *line += 1;
@@ -101,7 +122,7 @@ void execute_command(char **args, size_t *line) {
 		}
 		(void)wpid;
 		
-		close(filedes[0]);
+		close(stdout_des[0]);
 
 		refresh();
 	}	
