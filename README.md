@@ -2,10 +2,15 @@
 Shell written in C
 
 ## Quick Start
+
 ```
-./build.sh
+make
 ./main
 ```
+
+> [!TIP]
+> To see other available target, use `make help`
+
 
 The goal is to make a POSIX compliant shell
 

@@ -1,1 +1,7 @@
+# binaries
 main
+debug
+check
+
+# build artifacts
+.build
