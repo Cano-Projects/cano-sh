@@ -20,7 +20,7 @@ bool shell_repl_initialize(Repl *repl) {
 	size_t width;
 	size_t height;
 	getmaxyx(stdscr, height, width);
-	repl->buffer = newpad(width, height);
+	repl->buffer = newpad(height, width);
 
 	keypad(repl->buffer, TRUE);
 	scrollok(repl->buffer, TRUE);
@@ -54,7 +54,7 @@ bool shell_readline(Repl *repl)
 		mvwprintw(repl->buffer, line, 0, "%s%.*s", SHELL_PROMPT, (int)command.count, command.data);
 		if (position > command.count)
 			position = command.count;
-
+		
 		wmove(repl->buffer, line, SSTR_LEN(SHELL_PROMPT) + position);
 		prefresh(repl->buffer, top_row, 0, 0, 0, height-1, width-1);
 

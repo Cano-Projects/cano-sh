@@ -124,6 +124,11 @@ void handle_command(Repl *repl, char **args, size_t *line) {
 			mvwprintw(repl->buffer, *line, 0, "`%s` %s", dir, strerror(errno));
 			*line += 1;
 		}
+	} else if(strcmp(args[0], "history") == 0) {
+		for(size_t i = 0; i < repl->command_his.count; i++) {
+			String command = repl->command_his.data[i];
+			mvwprintw(repl->buffer, (*line)++, 0, "%zu %.*s", i, (int)command.count, command.data);
+		}
 	} else {
 		execute_command(repl, args, line);
 	}
