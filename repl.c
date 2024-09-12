@@ -15,48 +15,59 @@ bool shell_repl_initialize(Repl *repl) {
 	initscr();
 	raw();
 	noecho();
-	keypad(stdscr, TRUE);
+
+	// TODO: change pad size on resize
+	size_t width;
+	size_t height;
+	getmaxyx(stdscr, height, width);
+	repl->buffer = newpad(width, height);
+
+	keypad(repl->buffer, TRUE);
+	scrollok(repl->buffer, TRUE);
     return true;
 }
 
 static
-void clear_line(size_t line, size_t width) {
+void clear_line(WINDOW* window, size_t line, size_t width) {
 	for (size_t i = SSTR_LEN(SHELL_PROMPT); i < width - SSTR_LEN(SHELL_PROMPT); i++)
-		mvprintw(line, i, " ");
+		mvwprintw(window, line, i, " ");
 }
 
 static
 bool shell_readline(Repl *repl)
 {
 	String command = repl->input;
-	size_t height __attribute__((unused));
+	size_t height;
 	size_t width;
 	size_t line = repl->line;
 	size_t position = 0;
 	size_t command_max = repl->command_his.count;
 	int ch;
-
+	size_t top_row = 0;
+	
 	command.count = 0;
 	while (true) {
 		getmaxyx(stdscr, height, width);
-		clear_line(line, width);
-
-		mvprintw(line, 0, "%s%.*s", SHELL_PROMPT, (int)command.count, command.data);
+		clear_line(repl->buffer, line, width);
+		
+		if(line >= height) top_row = line - height+1;
+		mvwprintw(repl->buffer, line, 0, "%s%.*s", SHELL_PROMPT, (int)command.count, command.data);
+		prefresh(repl->buffer, top_row, 0, 0, 0, height-1, width-1);
 		if (position > command.count)
 			position = command.count;
 
-		move(line, SSTR_LEN(SHELL_PROMPT) + position);
+		wmove(repl->buffer, line, SSTR_LEN(SHELL_PROMPT) + position);
 
-		ch = getch();
+		ch = wgetch(repl->buffer);
 		switch (ch) {
 			case KEY_ENTER:
-			case '\n':
+			case '\n': {
 				line++;
 				if (command.count == 0)
 					continue;
 				repl->line = line;
 				repl->input = command;
-				return true;
+			} return true;
 			case ctrl('d'):
 			case ctrl('q'):
 				repl->is_running = false;
@@ -105,7 +116,7 @@ bool shell_evaluate(Repl *repl)
 	char **args = parse_command(str_to_cstr(repl->input));
 
 	if (args != NULL) {
-		handle_command(args, &repl->line);
+		handle_command(repl, args, &repl->line);
 		DA_APPEND(&repl->command_his, repl->input);
 	}
 	repl->input = (String){ 0 };
@@ -124,7 +135,6 @@ int shell_repl_run(void)
         if (!shell_evaluate(&repl))
             break;
     }
-	refresh();
 	endwin();
 	echo();
     return EXIT_SUCCESS;

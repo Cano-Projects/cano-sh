@@ -21,17 +21,17 @@ void close_pipe(int pipes[2]) {
 	close(pipes[1]);
 }
 
-void execute_command(char **args, size_t *line) {
+void execute_command(Repl *repl, char **args, size_t *line) {
 	char buf[4096] = {0};
 	int stdout_des[2];
 	int stderr_des[2];
 	if(pipe(stdout_des) < 0) {
-		mvprintw(*line, 0, "error %s", strerror(errno));
+		mvwprintw(repl->buffer, *line, 0, "error %s", strerror(errno));
         return;
 	}
 
 	if(pipe(stderr_des) < 0) {
-		mvprintw(*line, 0, "error %s", strerror(errno));
+		mvwprintw(repl->buffer, *line, 0, "error %s", strerror(errno));
         close_pipe(stdout_des);
         return;
 	}
@@ -39,7 +39,7 @@ void execute_command(char **args, size_t *line) {
 	int status;
 	int pid = fork();
 	if(pid < 0) { // error
-		mvprintw(*line, 0, "error %s", strerror(errno));
+		mvwprintw(repl->buffer, *line, 0, "error %s", strerror(errno));
         close_pipe(stdout_des);
         close_pipe(stderr_des);
 		return;
@@ -66,7 +66,7 @@ void execute_command(char **args, size_t *line) {
 
 		int nbytes = 0;
 		while((nbytes = read(stdout_des[0], buf, sizeof(buf)-1)) != 0) {
-			mvprintw(*line, 0, "%s", buf);
+			mvwprintw(repl->buffer, *line, 0, "%s", buf);
 			for(size_t i = 0; buf[i] != '\0'; i++) {
 				if(buf[i] == '\n') *line += 1;
 			}
@@ -75,7 +75,7 @@ void execute_command(char **args, size_t *line) {
 		}
 
 		while((nbytes = read(stderr_des[0], buf, sizeof(buf)-1)) != 0) {
-			mvprintw(*line, 0, "%s", buf);
+			mvwprintw(repl->buffer, *line, 0, "%s", buf);
 			for(size_t i = 0; buf[i] != '\0'; i++) {
 				if(buf[i] == '\n') *line += 1;
 			}
@@ -96,9 +96,9 @@ void execute_command(char **args, size_t *line) {
 	}	
 }
 	
-void handle_command(char **args, size_t *line) {
+void handle_command(Repl *repl, char **args, size_t *line) {
 	if(*args == NULL) {
-		mvprintw(*line, 0, "error, no command\n");		
+		mvwprintw(repl->buffer, *line, 0, "error, no command\n");		
 		return;
 	}
 	if(strcmp(args[0], "exit") == 0) {
@@ -121,11 +121,11 @@ void handle_command(char **args, size_t *line) {
 			dir = args[1];
 		}
 		if(chdir(dir) < 0) {
-			mvprintw(*line, 0, "`%s` %s", dir, strerror(errno));
+			mvwprintw(repl->buffer, *line, 0, "`%s` %s", dir, strerror(errno));
 			*line += 1;
 		}
 	} else {
-		execute_command(args, line);
+		execute_command(repl, args, line);
 	}
 }
 

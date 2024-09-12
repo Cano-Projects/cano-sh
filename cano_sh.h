@@ -31,11 +31,6 @@
         (da)->data[(da)->count++] = (item);                                                \
     } while (0)
 
-int shell_repl_run(void);
-
-char **parse_command(char *command);
-void execute_command(char **args, size_t *line);
-void handle_command(char **args, size_t *line);
 
 typedef struct {
 	char *data;
@@ -53,9 +48,17 @@ typedef struct shell_repl_s {
 	String input;
     Strings command_his;
     size_t line;
+	WINDOW *buffer;
     bool is_running;
 } Repl;
 
 char *str_to_cstr(String str);
+
+int shell_repl_run(void);
+
+char **parse_command(char *command);
+void execute_command(Repl *repl, char **args, size_t *line);
+void handle_command(Repl *repl, char **args, size_t *line);
+
 
 #endif
