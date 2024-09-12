@@ -77,6 +77,12 @@ bool shell_readline(Repl *repl)
 			case ctrl('q'):
 				repl->is_running = false;
 				return true;
+			case ctrl('a'):
+				position = 0;
+				break;
+			case ctrl('e'):
+				position = command.count;
+				break;
 			case ctrl('c'):
 				line++;
 				command.count = 0;
