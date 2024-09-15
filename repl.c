@@ -74,7 +74,7 @@ bool shell_readline(Repl *repl)
 				break;
 			case KEY_ENTER:
 			case '\n': {
-				line += 1; // + (command.count+SSTR_LEN(SHELL_PROMPT))/width;
+				line += 1 + (command.count+SSTR_LEN(SHELL_PROMPT))/width;
 				if (command.count == 0)
 					continue;
 				repl->line = line;
