@@ -18,13 +18,13 @@ The goal is to make a POSIX compliant shell
 
 - [x] shell repl in ncurses
 - [x] execute binaries on system
-## Shortcuts
+### Shortcuts
 - [x] CTRL+A (Move to beginning of line)
 - [x] CTRL+E (Move to end of line)
 - [x] CTRL+K (Cut everything after cursor)
 - [x] CTRL+Y (Paste cutted content)
 - [ ] CTRL+R (Reverse search command history)
-## Builtins
+### Builtins
 - [x] exit
 - [x] cd
 - [x] history
