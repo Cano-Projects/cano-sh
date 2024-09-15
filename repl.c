@@ -69,8 +69,8 @@ bool shell_readline(Repl *repl)
 		ch = wgetch(repl->buffer);
 		switch (ch) {
 			case KEY_RESIZE:
-				//getmaxyx(stdscr, height, width);
-				//wresize(repl->buffer, height, width);
+				getmaxyx(stdscr, height, width);
+				wresize(repl->buffer, buf_height, width);
 				break;
 			case KEY_ENTER:
 			case '\n': {
