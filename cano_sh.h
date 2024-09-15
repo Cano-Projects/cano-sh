@@ -47,6 +47,7 @@ typedef struct {
 typedef struct shell_repl_s {
 	String input;
     Strings command_his;
+	String clipboard;
     size_t line;
 	WINDOW *buffer;
     bool is_running;

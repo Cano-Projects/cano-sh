@@ -90,6 +90,29 @@ bool shell_readline(Repl *repl)
 			case ctrl('e'):
 				position = command.count;
 				break;
+			case ctrl('k'):
+				if(repl->clipboard.capacity < command.count-position) {
+					repl->clipboard.capacity = command.count*2;
+					repl->clipboard.count = command.count-position;
+					repl->clipboard.data = realloc(repl->clipboard.data, sizeof(char)*repl->clipboard.capacity);
+					if(repl->clipboard.data == NULL) {
+						endwin();
+						repl->is_running = false;
+						fprintf(stderr, "Could not allocate space for clipboard\n");
+						return 0;
+					}
+				}
+				strncpy(repl->clipboard.data, &command.data[position], sizeof(char)*(command.count-position));
+				command.count = position;
+				break;
+			case ctrl('y'): 
+				for(size_t i = 0; i < repl->clipboard.count; i++) {
+					ch = repl->clipboard.data[i];
+					DA_APPEND(&command, ch);
+					memmove(&command.data[position+1], &command.data[position], command.count - 1 - position);
+					command.data[position++] = ch;
+				}
+				break;
 			case ctrl('c'):
 				line++;
 				command.count = 0;
