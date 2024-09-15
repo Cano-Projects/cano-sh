@@ -2,6 +2,7 @@
 main
 debug
 check
+*.out
 
 # build artifacts
 .build
