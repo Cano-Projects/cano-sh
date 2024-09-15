@@ -31,6 +31,19 @@
         (da)->data[(da)->count++] = (item);                                                \
     } while (0)
 
+    #define DA_CHECK_BOUNDS(da, bounds, new_s) do { \
+        if((bounds) >= (da)->capacity) { \
+            (da)->capacity = (new_s); \
+            (da)->data = realloc((da)->data, sizeof(char)*(da)->capacity); \
+            if((da)->data == NULL) { \
+                endwin(); \
+                repl->is_running = false; \
+                fprintf(stderr, "Could not allocate space for clipboard\n"); \
+                return 0; \
+            } \
+        } \
+    } while (0)
+
 
 typedef struct {
 	char *data;
