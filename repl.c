@@ -20,7 +20,7 @@ bool shell_repl_initialize(Repl *repl) {
 	size_t width;
 	size_t height;
 	getmaxyx(stdscr, height, width);
-	repl->buffer = newpad(height, width);
+	repl->buffer = newpad(height*4, width);
 
 	keypad(repl->buffer, TRUE);
 	scrollok(repl->buffer, TRUE);
@@ -37,6 +37,8 @@ static
 bool shell_readline(Repl *repl)
 {
 	String command = repl->input;
+	size_t buf_height;
+	size_t buf_width;
 	size_t height;
 	size_t width;
 	size_t line = repl->line;
@@ -47,12 +49,17 @@ bool shell_readline(Repl *repl)
 	
 	command.count = 0;
 	while (true) {
+		getmaxyx(repl->buffer, buf_height, buf_width);
+		if(line >= buf_height/2) {
+			wresize(repl->buffer, buf_height*2, buf_width);
+		}
+			
 		getmaxyx(stdscr, height, width);
 		clear_line(repl->buffer, line, width);
 		
+		if(line >= height) top_row = line - height+1;
 		mvwprintw(repl->buffer, line, 0, "%s%.*s", SHELL_PROMPT, (int)command.count, command.data);
 		
-		if(line >= height) top_row = line - height+1;
 		if (position > command.count)
 			position = command.count;
 
@@ -62,12 +69,12 @@ bool shell_readline(Repl *repl)
 		ch = wgetch(repl->buffer);
 		switch (ch) {
 			case KEY_RESIZE:
-				getmaxyx(stdscr, height, width);
-				wresize(repl->buffer, height, width);
+				//getmaxyx(stdscr, height, width);
+				//wresize(repl->buffer, height, width);
 				break;
 			case KEY_ENTER:
 			case '\n': {
-				line += 1 + (command.count+SSTR_LEN(SHELL_PROMPT))/width;
+				line += 1; // + (command.count+SSTR_LEN(SHELL_PROMPT))/width;
 				if (command.count == 0)
 					continue;
 				repl->line = line;
