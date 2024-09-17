@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
+#include <locale.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -186,5 +187,6 @@ char **parse_command(char *command) {
 }
 
 int main(void) {
+	setlocale(LC_ALL, "");
 	return shell_repl_run();
 }

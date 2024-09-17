@@ -9,7 +9,7 @@ endif
 CFLAGS += -MMD -MP
 CFLAGS += -O2
 
-LDLIBS = -lncurses
+LDLIBS = -lncursesw
 
 VPATH := .
 SRC-OUT := main.c
