@@ -92,12 +92,14 @@ bool shell_readline(Repl *repl)
 			case ctrl('a'):
 				position = 0;
 				break;
+			case KEY_LEFT:
 			case ctrl('b'):
 				position -= 1;
 				break;
 			case ctrl('e'):
 				position = command.count;
 				break;
+			case KEY_RIGHT:
 			case ctrl('f'):
 				position += 1;
 				break;
@@ -107,6 +109,7 @@ bool shell_readline(Repl *repl)
 				memmove(command.data, &command.data[position], (command.count - position) * sizeof(char));
 				command.count -= position;
 				repl->clipboard.count = position;
+				position = 0;
 				break;
 			case ctrl('k'):
 				DA_CHECK_BOUNDS(&repl->clipboard, command.count-position, command.count*2);
@@ -130,13 +133,6 @@ bool shell_readline(Repl *repl)
 			case KEY_BACKSPACE:
 				if (command.count > 0)
 					command.data[--command.count] = '\0';
-				break;
-			case KEY_LEFT:
-				if (position > 0)
-					position--;
-				break;
-			case KEY_RIGHT:
-				position++;
 				break;
 			case KEY_UP:
 				if (repl->command_his.count > 0) {
