@@ -20,8 +20,13 @@ The goal is to make a POSIX compliant shell
 - [x] execute binaries on system
 ### Shortcuts
 - [x] CTRL+A (Move to beginning of line)
+- [x] CTRL+B (Move the cursor backwards)
+- [x] CTRL+D (Quit)
 - [x] CTRL+E (Move to end of line)
+- [x] CTRL+F (Move the cursor forewards)
 - [x] CTRL+K (Cut everything after cursor)
+- [x] CTRL+L (Clear, keeping current command)
+- [x] CTRL+U (Cut everything before cursor)
 - [x] CTRL+Y (Paste cutted content)
 - [ ] CTRL+R (Reverse search command history)
 ### Builtins
