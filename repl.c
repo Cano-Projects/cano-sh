@@ -80,6 +80,11 @@ bool shell_readline(Repl *repl)
 				repl->line = line;
 				repl->input = command;
 			} return true;
+			case ctrl('l'):
+				wclear(repl->buffer);
+				wrefresh(repl->buffer);
+				line = 0;
+				break;
 			case ctrl('d'):
 			case ctrl('q'):
 				repl->is_running = false;
@@ -87,8 +92,21 @@ bool shell_readline(Repl *repl)
 			case ctrl('a'):
 				position = 0;
 				break;
+			case ctrl('b'):
+				position -= 1;
+				break;
 			case ctrl('e'):
 				position = command.count;
+				break;
+			case ctrl('f'):
+				position += 1;
+				break;
+			case ctrl('u'):
+				DA_CHECK_BOUNDS(&repl->clipboard, position, command.count*2);
+				memcpy(repl->clipboard.data, command.data, position * sizeof(char));
+				memmove(command.data, &command.data[position], (command.count - position) * sizeof(char));
+				command.count -= position;
+				repl->clipboard.count = position;
 				break;
 			case ctrl('k'):
 				DA_CHECK_BOUNDS(&repl->clipboard, command.count-position, command.count*2);
