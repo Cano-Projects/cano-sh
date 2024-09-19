@@ -9,8 +9,9 @@
 static const char SHELL_PROMPT[] = "[canosh]$ ";
 static const Repl REPL_INIT = { .is_running = true };
 
-static
-bool shell_repl_initialize(Repl *repl) {
+#define export __attribute__((visibility("default")))
+
+bool export shell_repl_initialize(Repl *repl) {
     *repl = REPL_INIT;
 	initscr();
 	raw();
@@ -43,8 +44,7 @@ void clear_line(WINDOW* window, size_t line, size_t width) {
 		mvwprintw(window, line, i, " ");
 }
 
-static
-bool shell_readline(Repl *repl)
+bool export shell_readline(Repl *repl)
 {
 	String command = repl->input;
 	size_t buf_height;
@@ -153,8 +153,7 @@ bool shell_readline(Repl *repl)
 	}
 }
 
-static
-bool shell_evaluate(Repl *repl)
+bool export shell_evaluate(Repl *repl)
 {
 	char **args = parse_command(str_to_cstr(repl->input));
 
@@ -174,7 +173,7 @@ int shell_repl_run(void)
         return EXIT_FAILURE;
     while (repl.is_running) {
         if (!shell_readline(&repl))
-            continue;
+            break;
         if (!shell_evaluate(&repl))
             break;
     }
