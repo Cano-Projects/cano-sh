@@ -186,7 +186,9 @@ char **parse_command(char *command) {
 	return args;
 }
 
+#ifndef HOT_RELEAD
 int main(void) {
 	setlocale(LC_ALL, "");
 	return shell_repl_run();
 }
+#endif
