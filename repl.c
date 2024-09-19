@@ -27,6 +27,16 @@ bool shell_repl_initialize(Repl *repl) {
     return true;
 }
 
+
+void export shell_cleanup(Repl *repl)
+{
+	delwin(repl->buffer);
+	noraw();
+	endwin();
+	echo();
+}
+
+
 static
 void clear_line(WINDOW* window, size_t line, size_t width) {
 	for (size_t i = SSTR_LEN(SHELL_PROMPT); i < width - SSTR_LEN(SHELL_PROMPT); i++)
@@ -168,7 +178,6 @@ int shell_repl_run(void)
         if (!shell_evaluate(&repl))
             break;
     }
-	endwin();
-	echo();
+	shell_cleanup(&repl);
     return EXIT_SUCCESS;
 }
