@@ -17,26 +17,33 @@ SRC-OUT += repl.c
 
 vpath %.c $(VPATH)
 
-# $(eval $(call mk-recipe-binary, ...))
-# args: binary-name, src-list, extra-flags
-define _mk-recipe-binary
+
+# $(eval $(call _mk-recipe-obj, ...))
+# args: binary-name, src-list, extra-flags, is_shared
+define _mk-bin-recipe
+
+name-$1 := $$(if $$(subst no,,$4),so,out)
+
+ifeq ($4,yes)
+so-$1 := $$(BUILD_DIR)/lib$1.so
+else
+out-$1 := $1
+endif
 
 obj-$1 := $$($2:%.c=$$(BUILD_DIR)/$1/%.o)
-out-$1 := $1
 dep-$1 := $$(obj-$1:%.o=%.d)
 
 -include $$(dep-$1)
 
 $$(BUILD_DIR)/$1/%.o: %.c
 	@ mkdir -p $$(dir $$@)
-		$$(CC) \
+		$$(CC)										   \
 		$$(CFLAGS) $$(CFLAGS_@$$(notdir $$(@:.o=))) $3 \
 		-o $$@ -c $$<
 
-$$(out-$1): $$(obj-$1)
-	@ mkdir -p $$(dir $$@)
-	$$(CC) -o $$@ $$(obj-$1)                  \
-		$$(CFLAGS) $$(CFLAGS_@$$(notdir $$(@:.o=))) $3 \
+$$($$(name-$1)-$1): $$(obj-$1)
+	$$(CC) -o $$@ $$(obj-$1)                \
+		$$(CFLAGS_@$$(notdir $$(@:.o=))) $3 \
 		$$(LDLIBS) $$(LDFLAGS)
 
 _clean += $$(obj-$1)
@@ -45,22 +52,35 @@ _fclean += $$(out-$1)
 endef
 
 # strip the argument spaces, do not append space right after the commas!
-mk-recipe-binary = $(call _mk-recipe-binary,$(strip $1),$(strip $2),$3)
+_mk-bin = $(call _mk-bin-recipe,$(strip $1),$(strip $2),$3,$(strip $4))
+
+mk-binary = $(call _mk-bin, $1, $2, $3, no)
+mk-shared-object = $(call _mk-bin, $1, $2, -shared -fPIC $3, yes)
 
 #? (default): build the release binary
 .PHONY: _start
 _start: all
 
 #? main: build the release binary, main
-$(eval $(call mk-recipe-binary, main, SRC-OUT, ))
+$(eval $(call mk-binary, main, SRC-OUT, ))
 
 #? debug: build with debug logs an eponym binary
 debug-flags := -fanalyzer -DDEBUG=1 -ggdb2 -g3
-$(eval $(call mk-recipe-binary, debug, SRC-OUT, $(debug-flags)))
+$(eval $(call mk-shared-object, debug, SRC-OUT, $(debug-flags)))
+
+debug: hot_reload.c $(so-debug)
+	$(CC) -o $@ $< $(subst -MMD -MP,,$(CFLAGS))  \
+		-DHOT_RELOADER_LIB=$(so-debug)           \
+		$(debug-flags) $(LDFLAGS) $(LDLIBS)
+
+_fclean += debug
+
 
 #? check: build with all warnings and sanitizers an eponym binary
 check-flags := $(debug-flags) -fsanitize=address,leak,undefined
-$(eval $(call mk-recipe-binary, check, SRC-OUT, $(check-flags)))
+$(eval $(call mk-binary, check, SRC-OUT, $(check-flags)))
+
+_fclean += check
 
 .PHONY: all
 all: $(out-main)
