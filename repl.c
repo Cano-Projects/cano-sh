@@ -41,8 +41,15 @@ bool export shell_readline(Repl *repl)
 
 bool export shell_evaluate(Repl *repl)
 {
-	char **args = parse_command(repl->input);
+	bool has_cmd = false;
+	char **args;
 
+	for (char *p = repl->input; !has_cmd && *p != '\0'; p++)
+		has_cmd |= !isspace(*p);
+    if (strlen(repl->input) < 1 || !has_cmd)
+		return true;
+
+	args = parse_command(repl->input);
 	if (args == NULL)
 		return false;
 	handle_command(args);
