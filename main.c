@@ -13,9 +13,6 @@
 
 #include <linux/limits.h>
 
-#include <readline/readline.h>
-#include <readline/history.h>
-
 #include "cano_sh.h"
 
 #define ctrl(x) ((x) & 0x1f)
