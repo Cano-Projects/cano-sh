@@ -51,7 +51,7 @@ void handle_command(char **args) {
 			for(size_t i = 0; args[1][i] != '\0'; i++) {
 				if(!isdigit(args[1][i])) {
 					fprintf(stderr, "numeric argument required - %s\n", args[1]);		
-					exit(2);
+					return;
 				}
 			}
 			exit_code = strtol(args[1], NULL, 10);
