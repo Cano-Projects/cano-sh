@@ -12,7 +12,6 @@
     #define ASSERT(cond, ...) \
         do { \
             if (!(cond)) { \
-                endwin();   \
                 fprintf(stderr, "%s:%d: ASSERTION FAILED: ", __FILE__, __LINE__); \
                 fprintf(stderr, __VA_ARGS__); \
                 fprintf(stderr, "\n"); \
@@ -38,7 +37,6 @@
             (da)->capacity = (new_s); \
             (da)->data = realloc((da)->data, sizeof(char)*(da)->capacity); \
             if((da)->data == NULL) { \
-                endwin(); \
                 repl->is_running = false; \
                 fprintf(stderr, "Could not allocate space for clipboard\n"); \
                 return 0; \
@@ -60,11 +58,8 @@ typedef struct {
 } Strings;
 
 typedef struct shell_repl_s {
-	String input;
-    Strings command_his;
+	char *input;
 	String clipboard;
-    size_t line;
-	WINDOW *buffer;
     bool is_running;
 } Repl;
 
@@ -73,8 +68,8 @@ char *str_to_cstr(String str);
 int shell_repl_run(void);
 
 char **parse_command(char *command);
-void execute_command(Repl *repl, char **args, size_t *line);
-void handle_command(Repl *repl, char **args, size_t *line);
+void execute_command(char **args);
+void handle_command(char **args);
 
 bool shell_repl_initialize(Repl *repl);
 bool shell_readline(Repl *repl);

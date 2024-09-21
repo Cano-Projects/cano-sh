@@ -9,101 +9,40 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include <ncurses.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 #include "cano_sh.h"
 
 #define ctrl(x) ((x) & 0x1f)
 #define SHELL "[canosh]$ "
 
-static
-void close_pipe(int pipes[2]) {
-	close(pipes[0]);
-	close(pipes[1]);
-}
-
-void execute_command(Repl *repl, char **args, size_t *line) {
-	char buf[4096] = {0};
-	int stdout_des[2];
-	int stderr_des[2];
-	if(pipe(stdout_des) < 0) {
-		mvwprintw(repl->buffer, *line, 0, "error %s", strerror(errno));
-        return;
-	}
-
-	if(pipe(stderr_des) < 0) {
-		mvwprintw(repl->buffer, *line, 0, "error %s", strerror(errno));
-        close_pipe(stdout_des);
-        return;
-	}
-	
+void execute_command(char **args) {
 	int status;
 	int pid = fork();
 	if(pid < 0) { // error
-		mvwprintw(repl->buffer, *line, 0, "error %s", strerror(errno));
-        close_pipe(stdout_des);
-        close_pipe(stderr_des);
+		fprintf(stderr, "error %s", strerror(errno));
 		return;
 	} else if(!pid) { // child process
-		close(stdout_des[0]);
-		close(stderr_des[0]);
-		if(dup2(stdout_des[1], STDOUT_FILENO) < 0) {
-			printf("%s\n", strerror(errno));
-		}
-
-		if(dup2(stderr_des[1], STDERR_FILENO) < 0) {
-			printf("%s\n", strerror(errno));
-		}
-		close(stdout_des[1]);
-		close(stderr_des[1]);
-
 		if(execvp(args[0], args) < 0) {
-			printf("%s\n", strerror(errno));
+			fprintf(stderr, "%s\n", strerror(errno));
 		}
 		exit(1);
 	} else { // parent process
-		close(stdout_des[1]);
-		close(stderr_des[1]);
-
-		int nbytes = 0;
-		while((nbytes = read(stdout_des[0], buf, sizeof(buf)-1)) != 0) {
-			mvwprintw(repl->buffer, *line, 0, "%s", buf);
-			for(size_t i = 0; buf[i] != '\0'; i++) {
-				if(buf[i] == '\n') *line += 1;
-			}
-			refresh();
-			memset(buf, 0, sizeof(buf));
-		}
-
-		while((nbytes = read(stderr_des[0], buf, sizeof(buf)-1)) != 0) {
-			mvwprintw(repl->buffer, *line, 0, "%s", buf);
-			for(size_t i = 0; buf[i] != '\0'; i++) {
-				if(buf[i] == '\n') *line += 1;
-			}
-			refresh();
-			memset(buf, 0, sizeof(buf));
-		}
-			
 		int wpid = waitpid(pid, &status, 0);
 		while(!WIFEXITED(status) && !WIFSIGNALED(status)) {
 			wpid = waitpid(pid, &status, 0);
 		}
 		(void)wpid;
-		
-		close(stdout_des[0]);
-		close(stderr_des[0]);
-
-		refresh();
 	}	
 }
 	
-void handle_command(Repl *repl, char **args, size_t *line) {
+void handle_command(char **args) {
 	if(*args == NULL) {
-		mvwprintw(repl->buffer, *line, 0, "error, no command\n");		
+		fprintf(stderr, "error, no command\n");
 		return;
 	}
 	if(strcmp(args[0], "exit") == 0) {
-		endwin();
 		printf("exit\n");
 		int exit_code = 0;
 		if(args[1] != NULL) {
@@ -122,16 +61,15 @@ void handle_command(Repl *repl, char **args, size_t *line) {
 			dir = args[1];
 		}
 		if(chdir(dir) < 0) {
-			mvwprintw(repl->buffer, *line, 0, "`%s` %s", dir, strerror(errno));
-			*line += 1;
+			fprintf(stderr, "%s %s", dir, strerror(errno));
 		}
 	} else if(strcmp(args[0], "history") == 0) {
-		for(size_t i = 0; i < repl->command_his.count; i++) {
-			String command = repl->command_his.data[i];
-			mvwprintw(repl->buffer, (*line)++, 0, "%zu %.*s", i, (int)command.count, command.data);
-		}
+		//for(size_t i = 0; i < repl->command_his.count; i++) {
+			//String command = repl->command_his.data[i];
+			//printf("%zu %.*s", i, (int)command.count, command.data);
+		//}
 	} else {
-		execute_command(repl, args, line);
+		execute_command(args);
 	}
 }
 

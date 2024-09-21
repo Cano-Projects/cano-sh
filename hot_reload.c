@@ -74,8 +74,7 @@ void run_command(Repl *this, struct sh *shell, char const *fmt, ...)
     va_list ap;
 
     va_start(ap, fmt);
-    this->input.count = vsnprintf(this->input.data, sizeof cmd, fmt, ap);
-	this->input.capacity = this->input.count;
+    vsnprintf(this->input, sizeof cmd, fmt, ap);
     va_end(ap);
 	shell->eval(this);
 }
@@ -98,7 +97,7 @@ init:
 			return EXIT_FAILURE;
 		if (!this->is_running)
 			break;
-		if (!strcmp(this->input.data, "reload")) {
+		if (!strcmp(this->input, "reload")) {
 			run_command(this, shell, "make %s", binname);
 			goto init;
 		}
