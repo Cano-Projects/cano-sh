@@ -21,11 +21,13 @@ bool export shell_repl_initialize(Repl *repl) {
 
 void export shell_cleanup(Repl *repl)
 {
-	(void)repl;
+	free(repl->input);
 }
 
 bool export shell_readline(Repl *repl)
 {
+	if (repl->input != NULL)
+		free(repl->input);
 	repl->input = readline(SHELL_PROMPT);
 	// sending `^D` will cause readline to return NULL 
 	if (repl->input == NULL) {
@@ -41,11 +43,11 @@ bool export shell_evaluate(Repl *repl)
 {
 	char **args = parse_command(repl->input);
 
-	if (args != NULL) {
-		handle_command(args);
-		//DA_APPEND(&repl->command_his, repl->input);
-	}
-	free(repl->input);
+	if (args == NULL)
+		return false;
+	handle_command(args);
+	//DA_APPEND(&repl->command_his, repl->input);
+	free(args);
 	return true;
 }
 

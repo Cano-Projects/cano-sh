@@ -68,7 +68,6 @@ char *str_to_cstr(String str);
 int shell_repl_run(void);
 
 char **parse_command(char *command);
-void execute_command(char **args);
 void handle_command(char **args);
 
 bool shell_repl_initialize(Repl *repl);

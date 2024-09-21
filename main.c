@@ -17,6 +17,7 @@
 #define ctrl(x) ((x) & 0x1f)
 #define SHELL "[canosh]$ "
 
+static __attribute__((nonnull))
 void execute_command(char **args) {
 	int status;
 	int pid = fork();
@@ -37,6 +38,7 @@ void execute_command(char **args) {
 	}	
 }
 	
+__attribute__((nonnull))
 void handle_command(char **args) {
 	if(*args == NULL) {
 		fprintf(stderr, "error, no command\n");
@@ -82,7 +84,7 @@ char *str_to_cstr(String str) {
 	cstr[str.count] = '\0';
 	return cstr;
 }
-	
+
 char **parse_command(char *command) {
 	char const *marker = &command[strlen(command) + 1];
 	char *cur = strtok(command, " ");
@@ -95,10 +97,16 @@ char **parse_command(char *command) {
         return NULL;
     }
 	size_t args_cur = 0;
-	while(cur != NULL) {	
+	char **resized;
+	while(cur != NULL) {
 		if(args_cur+2 >= args_s) {
 			args_s *= 2;
-			args = realloc(args, sizeof(char*)*args_s);
+			resized = realloc(args, sizeof(char*)*args_s);
+			if (resized == NULL) {
+				free(args);
+				return false;
+			}
+			args = resized;
 		}
 		while(command[0] != '\0') command++;
 		command++;
