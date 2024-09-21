@@ -84,6 +84,7 @@ char *str_to_cstr(String str) {
 }
 	
 char **parse_command(char *command) {
+	char const *marker = &command[strlen(command) + 1];
 	char *cur = strtok(command, " ");
 	if(cur == NULL) {
 		return NULL;
@@ -102,7 +103,7 @@ char **parse_command(char *command) {
 		while(command[0] != '\0') command++;
 		command++;
 		assert(command);
-		if(command[0] == '\'') {
+		if(marker < command && command[0] == '\'') {
 			command++;
 			args[args_cur++] = cur;
 			cur = command;
