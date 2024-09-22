@@ -3,6 +3,7 @@
 
     #include <stdbool.h>
     #include <stddef.h>
+    #include <termios.h>
 
     #define DATA_START_CAPACITY 128
 
@@ -59,6 +60,7 @@ typedef struct {
 typedef struct shell_repl_s {
 	String input;
 	String clipboard;
+    struct termios init_settings;
     bool is_running;
 } Repl;
 
