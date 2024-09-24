@@ -44,7 +44,6 @@
         } \
     } while (0)
 
-
 typedef struct {
 	char *data;
 	size_t count;

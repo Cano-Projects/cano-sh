@@ -38,6 +38,29 @@ void execute_command(char **args) {
 	}	
 }
 	
+// TODO: implement \c \e \E
+static const char *get_escape_c(char *str, size_t index) {
+	if(str[index] == '\\') {
+		switch(str[index+1]) {
+			case 'a': return "\a";
+			case 'b': return "\b";
+			case 'c': return "c";
+			case 'e': return "e";
+			case 'E': return "E";
+			case 'f': return "\f";
+			case 'n': return "\n";
+			case 'r': return "\r";
+			case 't': return "\t";
+			case 'v': return "\v";
+			case '\\': return "\\";
+			case '0': return "\0";
+			default:
+				break;
+		}
+	}
+	return " ";
+}
+
 __attribute__((nonnull))
 void handle_command(char **args) {
 	if(*args == NULL) {
@@ -65,6 +88,26 @@ void handle_command(char **args) {
 		if(chdir(dir) < 0) {
 			fprintf(stderr, "%s %s", dir, strerror(errno));
 		}
+	} else if(strcmp(args[0], "echo") == 0) {
+		bool newline = true;
+		bool escapes = false;
+		for(size_t i = 1; args[i] != NULL; i++) {
+			for(size_t j = 0; args[i][j] != '\0'; j++) {
+				if(args[i][j] == '\\') {
+					const char *esc = get_escape_c(args[i], j);
+					if(esc[0] == ' ') continue;	
+					if(escapes) {
+						write(STDOUT_FILENO, esc, 1);
+						j++;
+					}
+				} else {
+					write(STDOUT_FILENO, args[i]+j, 1);	
+				}
+			}
+			write(STDOUT_FILENO, " ", 1);
+		}
+		if(newline)
+			write(STDOUT_FILENO, "\n", 1);
 	} else if(strcmp(args[0], "history") == 0) {
 		//for(size_t i = 0; i < repl->command_his.count; i++) {
 			//String command = repl->command_his.data[i];
