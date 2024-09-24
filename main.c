@@ -38,13 +38,14 @@ void execute_command(char **args) {
 	}	
 }
 	
-// TODO: implement \c \e \E
+// TODO: implement \e \E
+// Also hex and octal (and unicode?)
 static const char *get_escape_c(char *str, size_t index) {
 	if(str[index] == '\\') {
 		switch(str[index+1]) {
 			case 'a': return "\a";
 			case 'b': return "\b";
-			case 'c': return "c";
+			case 'c': return "s";
 			case 'e': return "e";
 			case 'E': return "E";
 			case 'f': return "\f";
@@ -96,6 +97,7 @@ void handle_command(char **args) {
 				if(args[i][j] == '\\') {
 					const char *esc = get_escape_c(args[i], j);
 					if(esc[0] == ' ') continue;	
+					if(esc[0] == 's') return;
 					if(escapes) {
 						write(STDOUT_FILENO, esc, 1);
 						j++;
