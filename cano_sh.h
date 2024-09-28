@@ -66,6 +66,8 @@ typedef struct shell_repl_s {
 #else
 	String input;
 	String clipboard;
+    Strings hist;
+    size_t hist_idx;
     struct termios init_settings;
 #endif
     size_t col;
@@ -77,7 +79,7 @@ char *str_to_cstr(String str);
 int shell_repl_run(void);
 
 char **parse_command(char *command);
-void handle_command(char **args);
+void handle_command(Repl *repl, char **args);
 
 bool shell_repl_initialize(Repl *repl);
 bool shell_readline(Repl *repl);

@@ -91,7 +91,7 @@ static bool str_isdigit(char *str) {
 
 
 __attribute__((nonnull))
-void handle_command(char **args) {
+void handle_command(Repl *repl, char **args) {
 	if(*args == NULL) {
 		fprintf(stderr, "error, no command\n");
 		return;
@@ -192,11 +192,13 @@ void handle_command(char **args) {
 		if(kill(pid, signal) < 0) {
 			fprintf(stderr, "%s", strerror(errno));
 		}
+#ifndef USE_READLINE
 	} else if(strcmp(args[0], "history") == 0) {
-		//for(size_t i = 0; i < repl->command_his.count; i++) {
-			//String command = repl->command_his.data[i];
-			//printf("%zu %.*s", i, (int)command.count, command.data);
-		//}
+		for(size_t i = 0; i < repl->hist.count; i++) {
+			String command = repl->hist.data[i];
+			printf("%zu %.*s\n", i, (int)command.count, command.data);
+		}
+#endif
 	} else {
 		execute_command(args);
 	}
