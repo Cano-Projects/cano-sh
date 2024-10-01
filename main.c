@@ -65,6 +65,23 @@ static const char *get_escape_c(char *str, size_t index) {
 	}
 	return " ";
 }
+	
+static char *handle_flags(char *args, const char *flags) {
+	char result[64] = {0};
+	size_t result_s = 0;
+	for(size_t i = 0; flags[i] != '\0'; i++) {
+		for(size_t j = 1; args[j] != '\0'; j++) {
+			if(flags[i] == args[j])
+				result[result_s++] = flags[i];
+		}
+	}
+	char *result_a = malloc(sizeof(char)*result_s+1);
+	if(result_a == NULL)
+		return NULL;
+	strncpy(result_a, result, result_s);
+	result_a[result_s] = '\0';
+	return result_a;
+}
 
 __attribute__((nonnull))
 void handle_command(char **args) {
@@ -99,16 +116,19 @@ void handle_command(char **args) {
 		
 		for(size_t i = 1; args[i] != NULL; i++) {
 			if(args[i][0] == '-') {
-				switch(args[i][1]) {
-					case 'n':
-						newline = false;
-						break;
-					case 'e':
-						escapes = true;
-						break;
-					default:
-						fprintf(stderr, "error: unknown flag %c\n", args[i][1]);
-						break;
+				char *flags = handle_flags(args[i], "ne");
+				if(flags != NULL) {
+					for(size_t flag = 0; flags[flag] != '\0'; flag++) {
+						switch(flags[flag]) {
+							case 'n':
+								newline = false;
+								break;
+							case 'e':
+								escapes = true;
+								break;
+						}
+					}
+					free(flags);
 				}
 				continue;
 			}
