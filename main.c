@@ -9,6 +9,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <linux/limits.h>
+
 #include <readline/readline.h>
 #include <readline/history.h>
 
@@ -110,6 +112,13 @@ void handle_command(char **args) {
 		}
 		if(newline)
 			write(STDOUT_FILENO, "\n", 1);
+	} else if(strcmp(args[0], "pwd") == 0) {
+		char path[PATH_MAX] = {0};
+		if(getcwd(path, PATH_MAX) == NULL) {
+			fprintf(stderr, "%s", strerror(errno));
+		}		
+		write(STDOUT_FILENO, path, strlen(path));
+		write(STDOUT_FILENO, "\n", 1);
 	} else if(strcmp(args[0], "history") == 0) {
 		//for(size_t i = 0; i < repl->command_his.count; i++) {
 			//String command = repl->command_his.data[i];
