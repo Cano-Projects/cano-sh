@@ -15,6 +15,8 @@
 #include <readline/history.h>
 
 #include "cano_sh.h"
+//#include "cgetopt.h"
+#include <getopt.h>
 
 #define ctrl(x) ((x) & 0x1f)
 #define SHELL "[canosh]$ "
@@ -94,7 +96,22 @@ void handle_command(char **args) {
 	} else if(strcmp(args[0], "echo") == 0) {
 		bool newline = true;
 		bool escapes = false;
+		
 		for(size_t i = 1; args[i] != NULL; i++) {
+			if(args[i][0] == '-') {
+				switch(args[i][1]) {
+					case 'n':
+						newline = false;
+						break;
+					case 'e':
+						escapes = true;
+						break;
+					default:
+						fprintf(stderr, "error: unknown flag %c\n", args[i][1]);
+						break;
+				}
+				continue;
+			}
 			for(size_t j = 0; args[i][j] != '\0'; j++) {
 				if(args[i][j] == '\\') {
 					const char *esc = get_escape_c(args[i], j);
@@ -108,7 +125,8 @@ void handle_command(char **args) {
 					write(STDOUT_FILENO, args[i]+j, 1);	
 				}
 			}
-			write(STDOUT_FILENO, " ", 1);
+			if(args[i+1] != NULL)
+				write(STDOUT_FILENO, " ", 1);
 		}
 		if(newline)
 			write(STDOUT_FILENO, "\n", 1);
