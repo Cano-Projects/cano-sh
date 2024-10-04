@@ -8,6 +8,8 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#define __USE_POSIX
+#include <signal.h>
 
 #include <linux/limits.h>
 
@@ -15,8 +17,6 @@
 #include <readline/history.h>
 
 #include "cano_sh.h"
-//#include "cgetopt.h"
-#include <getopt.h>
 
 #define ctrl(x) ((x) & 0x1f)
 #define SHELL "[canosh]$ "
@@ -82,6 +82,16 @@ static char *handle_flags(char *args, const char *flags) {
 	result_a[result_s] = '\0';
 	return result_a;
 }
+	
+static bool str_isdigit(char *str) {	
+	for(size_t i = 0; str[i] != '\0'; i++) {
+		if(!isdigit(str[i])) {
+			return false;
+		}
+	}
+	return true;
+}
+
 
 __attribute__((nonnull))
 void handle_command(char **args) {
@@ -93,11 +103,9 @@ void handle_command(char **args) {
 		printf("exit\n");
 		int exit_code = 0;
 		if(args[1] != NULL) {
-			for(size_t i = 0; args[1][i] != '\0'; i++) {
-				if(!isdigit(args[1][i])) {
-					fprintf(stderr, "numeric argument required - %s\n", args[1]);		
-					return;
-				}
+			if(!str_isdigit(args[1])) {
+				fprintf(stderr, "numeric argument required - %s\n", args[1]);		
+				return;
 			}
 			exit_code = strtol(args[1], NULL, 10);
 		}
@@ -157,6 +165,36 @@ void handle_command(char **args) {
 		}		
 		write(STDOUT_FILENO, path, strlen(path));
 		write(STDOUT_FILENO, "\n", 1);
+	} else if(strcmp(args[0], "kill") == 0) {
+		if(args[1] == NULL) {
+			fprintf(stderr, "usage: kill <pid>\n");
+			return;
+		}
+		int signal = SIGTERM;
+		size_t i = 1;
+		if(args[i][0] == '-') {
+			while(args[i][0] == '-') {
+				if(strcmp(args[i], "-s") == 0 || strcmp(args[i], "--signal") == 0) {
+					if(args[i+1] == NULL || !str_isdigit(args[i+1])) {
+						fprintf(stderr, "error: signal must have a numerical argument\n");
+						return;
+					}
+					signal = strtol(args[i+1], NULL, 10);
+					i += 2;
+				} else {
+					fprintf(stderr, "unrecognized flag `%s`\n", args[i]);
+					return;
+				}
+			}
+		}
+		if(!str_isdigit(args[i])) {
+			// TODO: convert string to PID and kill
+			return;
+		}
+		pid_t pid = strtol(args[i], NULL, 10);
+		if(kill(pid, signal) < 0) {
+			fprintf(stderr, "%s", strerror(errno));
+		}
 	} else if(strcmp(args[0], "history") == 0) {
 		//for(size_t i = 0; i < repl->command_his.count; i++) {
 			//String command = repl->command_his.data[i];
