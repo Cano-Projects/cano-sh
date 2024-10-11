@@ -37,12 +37,14 @@ dep-$1 := $$(obj-$1:%.o=%.d)
 
 $$(BUILD_DIR)/$1/%.o: %.c
 	@ mkdir -p $$(dir $$@)
-		$$(CC)										   \
+	@ $$(log) "$$(cyan)CC$$(reset) $$(notdir $$@)"
+	@ $$(CC)										   \
 		$$(CFLAGS) $$(CFLAGS_@$$(notdir $$(@:.o=))) $3 \
 		-o $$@ -c $$<
 
 $$($$(name-$1)-$1): $$(obj-$1)
-	$$(CC) -o $$@ $$(obj-$1)                \
+	@ $$(log) "$$(blue)LD$$(reset) $$(notdir $$@)"
+	@ $$(CC) -o $$@ $$(obj-$1)                \
 		$$(CFLAGS_@$$(notdir $$(@:.o=))) $3 \
 		$$(LDLIBS) $$(LDFLAGS)
 
@@ -69,12 +71,12 @@ debug-flags := -fanalyzer -DDEBUG=1 -ggdb2 -g3
 $(eval $(call mk-shared-object, debug, SRC-OUT, $(debug-flags)))
 
 debug: hot_reload.c $(so-debug)
-	$(CC) -o $@ $< $(subst -MMD -MP,,$(CFLAGS))  \
+	@ $(log) "$(blue)LD$(reset) $@"
+	@ $(CC) -o $@ $< $(subst -MMD -MP,,$(CFLAGS))  \
 		-DHOT_RELOADER_LIB=$(so-debug)           \
 		$(debug-flags) $(LDFLAGS) $(LDLIBS)
 
 _fclean += debug
-
 
 #? check: build with all warnings and sanitizers an eponym binary
 check-flags := $(debug-flags) -fsanitize=address,leak,undefined
@@ -87,23 +89,48 @@ all: $(out-main)
 
 .PHONY: clean
 clean: #? clean: removes object files
-	$(RM) -r $(_clean)
+	@ $(log) "$(yellow)RM$(reset) OBJS"
+	@ $(RM) -r $(_clean)
 
 .PHONY: fclean
 fclean: clean #? fclean: remove binaries and object files
-	$(RM) -r $(_fclean)
+	@ $(log) "$(yellow)RM$(reset) $(notdir $(_fclean))"
+	@ $(RM) -r $(_fclean)
 
 .PHONY: distclean #? distclean: remove all build artifacts
 distclean: fclean
 distclean:
-	$(RM) -r $(BUILD_DIR)
+	@ $(log) "$(yellow)RM$(reset) $(BUILD_DIR)"
+	@ $(RM) -r $(BUILD_DIR)
 
 .PHONY: help
 help: #? help: show this help message
 	@ grep -P "#[?] " $(MAKEFILE_LIST)          \
       | sed -E 's/.*#\? ([^:]+): (.*)/\1 "\2"/' \
-	  | xargs printf "%-12s: %s\n"
+	  | xargs printf "  $(blue)%-12s$(reset): $(cyan)%s$(reset)\n"
+
+.PHONY: bundle #? bundle: build all targets
+bundle: all check debug
 
 .PHONY: re
 .NOTPARALLEL: re
 re: fclean all #? re: rebuild the default target
+
+log = echo -e " " 
+
+ifneq ($(shell command -v tput),)
+  ifneq ($(shell tput colors),0)
+
+mk-color = \e[$(strip $1)m
+
+reset := $(call mk-color, 00)
+
+red := $(call mk-color, 31)
+green := $(call mk-color, 32)
+yellow := $(call mk-color, 33)
+blue := $(call mk-color, 34)
+purple := $(call mk-color, 35)
+cyan := $(call mk-color, 36)
+
+  endif
+endif
