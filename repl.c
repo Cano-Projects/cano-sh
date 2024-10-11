@@ -6,6 +6,8 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include <sys/ioctl.h>
+
 #include "cano_sh.h"
 
 #ifdef USE_READLINE
@@ -35,6 +37,10 @@ bool export shell_repl_initialize(Repl *repl) {
 	tcgetattr(STDIN_FILENO, &settings);
 #endif
 	*repl = REPL_INIT;
+	struct winsize w;
+	ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+	repl->rows = w.ws_row;
+	repl->cols = w.ws_col;
 #ifndef USE_READLINE
 	repl->input = input;
 	repl->init_settings = settings;
@@ -90,6 +96,7 @@ bool handle_shortcuts(Repl *repl, char c)
 {
 	int received;
 	char buf[32] = { '\0' }; /* Limit of \e sequences is undefined */
+	static size_t row = 1;
 
 one_more_time:
 	switch (c) {
@@ -235,6 +242,7 @@ one_more_time:
 
 		case '\n':
 			repl->col = 0;
+			row = 1;
             printf("\n\033[0G");
 			break;
 		default:
@@ -256,7 +264,11 @@ one_more_time:
 				);
 			}
 move_cursor:
-			printf("\033[%ldG", sstr_len(SHELL_PROMPT) + 1 + repl->col);
+			printf("\033[%ldG", (sstr_len(SHELL_PROMPT) + 1 + repl->col)%repl->cols);
+			if(((repl->col+sstr_len(SHELL_PROMPT)+1)/row) >= repl->cols) {
+				printf("\033[%dE\n", 1);
+				row++;
+			}
 			break;
 	}
 	return true;

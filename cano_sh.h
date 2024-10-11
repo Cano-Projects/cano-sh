@@ -64,6 +64,8 @@ typedef struct shell_repl_s {
         char *data;
     } input;
 #else
+	size_t rows;
+	size_t cols;
 	String input;
 	String clipboard;
     Strings hist;
