@@ -6,3 +6,7 @@ check
 
 # build artifacts
 .build
+
+# compile db
+compile_commands.json
+.cache
