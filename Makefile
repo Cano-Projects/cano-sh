@@ -11,6 +11,10 @@ CFLAGS += -O2
 
 LDLIBS = -lreadline
 
+ifneq (,$(shell find . -type f -name ".fast"))
+MAKEFLAGS += -j
+endif
+
 VPATH := .
 SRC-OUT := main.c
 SRC-OUT += repl.c
@@ -26,9 +30,7 @@ SRC-OUT += builtin_pwd.c
 VPATH += builtins/meta
 SRC-OUT += builtins_runner.c
 
-
 vpath %.c $(VPATH)
-
 
 # $(eval $(call _mk-recipe-obj, ...))
 # args: binary-name, src-list, extra-flags, is_shared
