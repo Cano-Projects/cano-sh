@@ -1,5 +1,4 @@
 #include <assert.h>
-#include <ctype.h>
 #include <errno.h>
 #include <locale.h>
 #include <stdbool.h>
@@ -8,14 +7,13 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#define __USE_POSIX
-#include <signal.h>
 
 #include <linux/limits.h>
 
 #include <readline/readline.h>
 #include <readline/history.h>
 
+#include "builtins/all_builtins.h"
 #include "cano_sh.h"
 
 #define ctrl(x) ((x) & 0x1f)
@@ -41,168 +39,23 @@ void execute_command(char **args) {
 		(void)wpid;
 	}	
 }
-	
-// TODO: implement \e \E
-// Also hex and octal (and unicode?)
-static const char *get_escape_c(char *str, size_t index) {
-	if(str[index] == '\\') {
-		switch(str[index+1]) {
-			case 'a': return "\a";
-			case 'b': return "\b";
-			case 'c': return "s";
-			case 'e': return "e";
-			case 'E': return "E";
-			case 'f': return "\f";
-			case 'n': return "\n";
-			case 'r': return "\r";
-			case 't': return "\t";
-			case 'v': return "\v";
-			case '\\': return "\\";
-			case '0': return "\0";
-			default:
-				break;
-		}
-	}
-	return " ";
-}
-	
-static char *handle_flags(char *args, const char *flags) {
-	char result[64] = {0};
-	size_t result_s = 0;
-	for(size_t i = 0; flags[i] != '\0'; i++) {
-		for(size_t j = 1; args[j] != '\0'; j++) {
-			if(flags[i] == args[j])
-				result[result_s++] = flags[i];
-		}
-	}
-	char *result_a = malloc(sizeof(char)*result_s+1);
-	if(result_a == NULL)
-		return NULL;
-	strncpy(result_a, result, result_s);
-	result_a[result_s] = '\0';
-	return result_a;
-}
-	
-static bool str_isdigit(char *str) {	
-	for(size_t i = 0; str[i] != '\0'; i++) {
-		if(!isdigit(str[i])) {
-			return false;
-		}
-	}
-	return true;
-}
-
 
 __attribute__((nonnull))
 void handle_command(char **args) {
-	if(*args == NULL) {
+	bltn_handler *handler;
+
+	if (*args == NULL) {
 		fprintf(stderr, "error, no command\n");
 		return;
 	}
-	if(strcmp(args[0], "exit") == 0) {
-		printf("exit\n");
-		int exit_code = 0;
-		if(args[1] != NULL) {
-			if(!str_isdigit(args[1])) {
-				fprintf(stderr, "numeric argument required - %s\n", args[1]);		
-				return;
-			}
-			exit_code = strtol(args[1], NULL, 10);
-		}
-		exit(exit_code);
-	} else if(strcmp(args[0], "cd") == 0) {
-		char const *dir = "~";
-		if(args[1] != NULL) {
-			dir = args[1];
-		}
-		if(chdir(dir) < 0) {
-			fprintf(stderr, "%s %s", dir, strerror(errno));
-		}
-	} else if(strcmp(args[0], "echo") == 0) {
-		bool newline = true;
-		bool escapes = false;
-		
-		for(size_t i = 1; args[i] != NULL; i++) {
-			if(args[i][0] == '-') {
-				char *flags = handle_flags(args[i], "ne");
-				if(flags != NULL) {
-					for(size_t flag = 0; flags[flag] != '\0'; flag++) {
-						switch(flags[flag]) {
-							case 'n':
-								newline = false;
-								break;
-							case 'e':
-								escapes = true;
-								break;
-						}
-					}
-					free(flags);
-				}
-				continue;
-			}
-			for(size_t j = 0; args[i][j] != '\0'; j++) {
-				if(args[i][j] == '\\') {
-					const char *esc = get_escape_c(args[i], j);
-					if(esc[0] == ' ') continue;	
-					if(esc[0] == 's') return;
-					if(escapes) {
-						write(STDOUT_FILENO, esc, 1);
-						j++;
-					}
-				} else {
-					write(STDOUT_FILENO, args[i]+j, 1);	
-				}
-			}
-			if(args[i+1] != NULL)
-				write(STDOUT_FILENO, " ", 1);
-		}
-		if(newline)
-			write(STDOUT_FILENO, "\n", 1);
-	} else if(strcmp(args[0], "pwd") == 0) {
-		char path[PATH_MAX] = {0};
-		if(getcwd(path, PATH_MAX) == NULL) {
-			fprintf(stderr, "%s", strerror(errno));
-		}		
-		write(STDOUT_FILENO, path, strlen(path));
-		write(STDOUT_FILENO, "\n", 1);
-	} else if(strcmp(args[0], "kill") == 0) {
-		if(args[1] == NULL) {
-			fprintf(stderr, "usage: kill <pid>\n");
-			return;
-		}
-		int signal = SIGTERM;
-		size_t i = 1;
-		if(args[i][0] == '-') {
-			while(args[i][0] == '-') {
-				if(strcmp(args[i], "-s") == 0 || strcmp(args[i], "--signal") == 0) {
-					if(args[i+1] == NULL || !str_isdigit(args[i+1])) {
-						fprintf(stderr, "error: signal must have a numerical argument\n");
-						return;
-					}
-					signal = strtol(args[i+1], NULL, 10);
-					i += 2;
-				} else {
-					fprintf(stderr, "unrecognized flag `%s`\n", args[i]);
-					return;
-				}
-			}
-		}
-		if(!str_isdigit(args[i])) {
-			// TODO: convert string to PID and kill
-			return;
-		}
-		pid_t pid = strtol(args[i], NULL, 10);
-		if(kill(pid, signal) < 0) {
-			fprintf(stderr, "%s", strerror(errno));
-		}
-	} else if(strcmp(args[0], "history") == 0) {
-		//for(size_t i = 0; i < repl->command_his.count; i++) {
-			//String command = repl->command_his.data[i];
-			//printf("%zu %.*s", i, (int)command.count, command.data);
-		//}
-	} else {
-		execute_command(args);
+
+	handler = shell_builtin_lookup(*args);
+	if (handler != NULL) {
+		handler(args);
+		return;
 	}
+
+	execute_command(args);
 }
 
 	

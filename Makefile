@@ -15,6 +15,18 @@ VPATH := .
 SRC-OUT := main.c
 SRC-OUT += repl.c
 
+VPATH += builtins
+SRC-OUT += builtin_cd.c
+SRC-OUT += builtin_echo.c
+SRC-OUT += builtin_exit.c
+SRC-OUT += builtin_history.c
+SRC-OUT += builtin_kill.c
+SRC-OUT += builtin_pwd.c
+
+VPATH += builtins/meta
+SRC-OUT += builtins_runner.c
+
+
 vpath %.c $(VPATH)
 
 
