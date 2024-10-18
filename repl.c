@@ -210,13 +210,14 @@ one_more_time:
 				repl->input.data);
 			goto move_cursor;
 			break;
-		case ctrl('y'):
+		case ctrl('y'): {
+			size_t orig_count = repl->input.count;
 			repl->input.count += repl->clipboard.count;
 			if (!string_ensure_capacity(&repl->input))
 				return false;
 			memmove(
 				&repl->input.data[repl->col + repl->clipboard.count],
-				&repl->input.data[repl->col], repl->clipboard.count);
+				&repl->input.data[repl->col], orig_count - repl->col);
 			memcpy(&repl->input.data[repl->col],
 				repl->clipboard.data, repl->clipboard.count);
 
@@ -226,7 +227,7 @@ one_more_time:
 			);
 			repl->col += repl->clipboard.count;
 			goto move_cursor;
-			break;
+		} break;
         case ctrl('e'):
             repl->col = repl->input.count;
 			goto move_cursor;
