@@ -226,7 +226,7 @@ one_more_time:
 				repl->input.count - repl->col
 			);
 			repl->col += repl->clipboard.count;
-			goto move_cursor;
+			//goto move_cursor;
 		} break;
         case ctrl('e'):
             repl->col = repl->input.count;
