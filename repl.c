@@ -226,7 +226,9 @@ one_more_time:
 				repl->input.count - repl->col
 			);
 			repl->col += repl->clipboard.count;
-			goto move_cursor;
+			while((repl->col/row) >= repl->cols)
+				row++;
+			fprintf(stderr, "%zu\n", row);
 		} break;
         case ctrl('e'):
             repl->col = repl->input.count;
