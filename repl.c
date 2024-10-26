@@ -228,7 +228,6 @@ one_more_time:
 			repl->col += repl->clipboard.count;
 			while((repl->col/row) >= repl->cols)
 				row++;
-			fprintf(stderr, "%zu\n", row);
 		} break;
         case ctrl('e'):
             repl->col = repl->input.count;
@@ -295,7 +294,7 @@ bool export shell_readline(Repl *repl)
 	repl->input.count = 0;
 	memset(repl->input.data, '\0', repl->input.capacity);
 	write(STDOUT_FILENO, sstr_unpack(SHELL_PROMPT));
-	while (c != '\n' && repl->is_running) {
+	while (repl->is_running && c != '\n') {
 		if (read(STDIN_FILENO, &c, 1) <= 0)
 			return false;
 		if (!handle_shortcuts(repl, c))
