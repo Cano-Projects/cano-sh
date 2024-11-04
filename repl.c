@@ -1,5 +1,7 @@
 #include <ctype.h>
 #include <fcntl.h>
+
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,16 +14,37 @@
 
 #ifdef USE_READLINE
 	#include <readline/readline.h>
+#else
+
+enum { MAGIC_SET = -0x3301 };
+
+static
+void handle_resize_event(int sig, Repl *repl_set)
+{
+	static Repl *repl = NULL;
+    struct winsize w;
+
+	if (sig == MAGIC_SET && repl_set != NULL)
+		repl = repl_set;
+
+    ioctl(0, TIOCGWINSZ, &w);
+	repl->rows = w.ws_row;
+	repl->cols = w.ws_col;
+	repl->repaint = true;
+}
+
 #endif
 
 #define ctrl(x) ((x) & 0x1f)
 
-static const char SHELL_PROMPT[] = "[canosh]$ ";
+static const char SHELL_PROMPT[] = "[canosh ( ?? x ?? )]$ ";
 static const Repl REPL_INIT = { .is_running = true };
 
 #define INITIAL_INPUT_CAPACITY 128
 
 #define export __attribute__((visibility("default")))
+
+typedef void (sighandler_t)(int);
 
 bool export shell_repl_initialize(Repl *repl) {
 #ifndef USE_READLINE
@@ -35,13 +58,14 @@ bool export shell_repl_initialize(Repl *repl) {
 		return false;
 
 	tcgetattr(STDIN_FILENO, &settings);
+	struct sigaction sa;
+#pragma GCC diagnostic ignored "-Wcast-function-type"
+    sa.sa_handler = (sighandler_t *)(&handle_resize_event);
+    sigaction(SIGWINCH, &sa, NULL);
 #endif
 	*repl = REPL_INIT;
-	struct winsize w;
-	ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-	repl->rows = w.ws_row;
-	repl->cols = w.ws_col;
 #ifndef USE_READLINE
+	handle_resize_event(MAGIC_SET, repl);
 	repl->input = input;
 	repl->init_settings = settings;
 	settings.c_iflag &= ~(IXON);
@@ -98,6 +122,9 @@ bool handle_shortcuts(Repl *repl, char c)
 	char buf[32] = { '\0' }; /* Limit of \e sequences is undefined */
 	static size_t row = 1;
 
+	if (repl->repaint) {
+		repl->repaint = false;
+	}
 one_more_time:
 	switch (c) {
 		case '\033': /* alternative keys */

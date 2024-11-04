@@ -70,9 +70,11 @@ typedef struct shell_repl_s {
 	String clipboard;
     Strings hist;
     size_t hist_idx;
+    size_t col;
+    size_t row;
+    bool repaint;
     struct termios init_settings;
 #endif
-    size_t col;
     bool is_running;
 } Repl;
 
