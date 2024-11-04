@@ -8,7 +8,6 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#define __USE_POSIX
 #include <signal.h>
 
 #include <linux/limits.h>

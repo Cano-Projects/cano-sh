@@ -8,6 +8,7 @@ CFLAGS += $(shell cat base_flags.txt)
 endif
 CFLAGS += -MMD -MP
 CFLAGS += -O2
+CFLAGS += -D_POSIX_SOURCE=1 -D_OPEN_SOURCE=1
 
 ifeq ($(USE_READLINE),1)
 CFLAGS += -DUSE_READLINE=1
